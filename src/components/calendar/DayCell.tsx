@@ -19,11 +19,16 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
   const highlight = state.highlights.find((h: DayHighlight) => h.date === day.date);
   const hasMarker = note || events.length > 0;
 
-  let textColor = day.isCurrentMonth ? colors.dayNumbers : `${colors.dayNumbers}80`;
-  if (day.isWeekend && day.isCurrentMonth) textColor = colors.weekendDays;
-  if (day.isToday) textColor = colors.today;
+  const isOutsideMonth = !day.isCurrentMonth;
 
-  const bgColor = highlight?.color ?? (day.isToday ? `${colors.today}18` : 'transparent');
+  let textColor = colors.dayNumbers;
+  if (day.isWeekend && day.isCurrentMonth) textColor = colors.weekendDays;
+  if (day.isToday && day.isCurrentMonth) textColor = colors.today;
+
+  const bgColor =
+    isOutsideMonth
+      ? 'transparent'
+      : highlight?.color ?? (day.isToday ? `${colors.today}18` : 'transparent');
 
   const cellSize = isYear ? Math.max(22, design.cellSize * 0.44) : design.cellSize;
   const fontSize = isYear ? Math.max(9, fonts.size * 0.65) : fonts.size;
@@ -38,9 +43,11 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
     fontSize,
     fontWeight: day.isToday ? Math.min(fonts.weight + 100, 700) : fonts.weight,
     textAlign: 'center',
-    border: design.showBorders ? `1px solid ${colors.borders}` : 'none',
-    opacity: day.isCurrentMonth ? 1 : 0.4,
-    boxShadow: day.isToday && design.style === 'elegant' ? `inset 0 0 0 1.5px ${colors.today}` : undefined,
+    border: design.showBorders && !isOutsideMonth ? `1px solid ${colors.borders}` : 'none',
+    boxShadow:
+      day.isToday && day.isCurrentMonth && design.style === 'elegant'
+        ? `inset 0 0 0 1.5px ${colors.today}`
+        : undefined,
   };
 
   const primary = getPrimaryCalendar(state);
@@ -56,7 +63,7 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
       className={`relative flex flex-col items-center justify-center ${isYear ? 'gap-px p-px' : 'p-1'}`}
       style={cellStyle}
     >
-      <span className="leading-none tabular-nums">{day.day}</span>
+      <span className="leading-none tabular-nums">{day.isCurrentMonth ? day.day : ''}</span>
 
       {secondaryDay != null && (
         <span
@@ -72,11 +79,12 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
         </span>
       )}
 
-      {!isYear && note && (
+      {!isYear && day.isCurrentMonth && note && (
         <span className="mt-0.5 line-clamp-1 w-full text-[0.55em] opacity-70">{note.text}</span>
       )}
 
       {!isYear &&
+        day.isCurrentMonth &&
         events.map((event) => (
           <span
             key={event.id}
@@ -87,7 +95,7 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
           </span>
         ))}
 
-      {isYear && hasMarker && (
+      {isYear && day.isCurrentMonth && hasMarker && (
         <span
           className="mt-px block h-1 w-1 rounded-full"
           style={{ backgroundColor: events[0]?.color ?? colors.today }}
