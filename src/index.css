@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+@theme {
+  --font-cairo: "Cairo", sans-serif;
+  --font-tajawal: "Tajawal", sans-serif;
+  --font-ibm: "IBM Plex Sans Arabic", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
+@page year-calendar {
+  size: A4 landscape;
+  margin: 6mm;
+}
+
+@media print {
+  html[data-print-view="yearly"] #calendar-print-area {
+    page: year-calendar;
+  }
+
+  body {
+    margin: 0;
+    background: white !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .preview-scroll-area,
+  .preview-scale-wrapper {
+    overflow: visible !important;
+    padding: 0 !important;
+    background: white !important;
+    transform: none !important;
+  }
+
+  #calendar-print-area,
+  #calendar-print-area * {
+    visibility: visible;
+  }
+
+  #calendar-print-area {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    max-width: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    page-break-inside: avoid;
+  }
+
+  #calendar-print-area[data-view="yearly"] {
+    padding: 3mm !important;
+  }
+
+  #calendar-print-area[data-view="yearly"] .year-calendar-header h1 {
+    font-size: 16pt !important;
+    margin-bottom: 2mm;
+  }
+
+  #calendar-print-area[data-view="yearly"] .year-calendar-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    grid-template-rows: repeat(3, auto) !important;
+    gap: 2mm !important;
+  }
+
+  html[data-print-view="yearly"][data-print-orientation="portrait"] #calendar-print-area .year-calendar-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-rows: repeat(4, auto) !important;
+  }
+
+  #calendar-print-area[data-view="yearly"] .year-month-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding: 1.5mm !important;
+  }
+
+  header,
+  aside,
+  .preview-scroll-area > div:not(.preview-scale-wrapper),
+  main > div:first-child,
+  main > div:last-child {
+    display: none !important;
+  }
+}
+
+/* Export mode — full resolution capture */
+.calendar-export-mode {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.calendar-export-mode.calendar-yearly {
+  max-width: 1123px !important;
+  width: 1123px !important;
+}
+
+.calendar-export-mode:not(.calendar-yearly) {
+  max-width: 794px !important;
+  width: 794px !important;
+}
+
+.calendar-yearly .year-month-card {
+  transition: box-shadow 0.2s;
+  overflow: visible;
+}
+
+.year-day-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.calendar-yearly .year-month-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
