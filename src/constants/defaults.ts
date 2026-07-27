@@ -29,6 +29,7 @@ export const DEFAULT_WEEKDAYS: WeekdaySettings = {
 export const DEFAULT_STATE: CalendarState = {
   view: 'monthly',
   system: 'gregorian',
+  primaryCalendar: 'hijri',
   gregorianYear: new Date().getFullYear(),
   hijriYear: getCurrentHijriYear(),
   month: new Date().getMonth() + 1,

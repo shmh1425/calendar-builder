@@ -23,33 +23,37 @@ import {
   formatHijriYearOption,
   getActiveYear,
   getDualYearLabel,
+  getPrimaryCalendar,
   gregorianFromHijriMonth,
 } from '../../utils/calendarData';
-import { GREGORIAN_MONTHS_AR, MONTHS_SHORT_EN, HIJRI_MONTHS_AR } from '../../constants/monthNames';
+import { GREGORIAN_MONTHS_AR, MONTHS_SHORT_EN, HIJRI_MONTHS_AR, HIJRI_MONTHS_EN } from '../../constants/monthNames';
 import type { TranslationKey } from '../../i18n/translations';
-import type { CalendarSystem, CalendarView, DesignStyle, FontFamily, Orientation, TextAlign, WeekStart } from '../../types/calendar';
+import type { CalendarSystem, CalendarView, DesignStyle, FontFamily, Orientation, PrimaryCalendar, TextAlign, WeekStart } from '../../types/calendar';
 
 export function CustomizationSidebar() {
   const { state, updateState } = useCalendar();
   const { t, locale } = useApp();
 
-  const months = state.system === 'hijri'
-    ? HIJRI_MONTHS_AR
-    : locale === 'ar' ? GREGORIAN_MONTHS_AR : MONTHS_SHORT_EN;
+  const primary = getPrimaryCalendar(state);
+  const isHijriPrimary = primary === 'hijri';
 
-  const isHijri = state.system === 'hijri';
+  const months = isHijriPrimary
+    ? locale === 'ar' ? HIJRI_MONTHS_AR : HIJRI_MONTHS_EN
+    : locale === 'ar' ? GREGORIAN_MONTHS_AR : MONTHS_SHORT_EN;
 
   const gregorianYears = getYearRange('gregorian');
   const hijriYears = getYearRange('hijri');
 
-  const navLabel = isHijri
-    ? `${months[state.month - 1]} ${formatHijriYearOption(state.hijriYear, locale)}`
+  const navLabel = isHijriPrimary
+    ? state.system === 'both'
+      ? `${months[state.month - 1]} ${getDualYearLabel(state.gregorianYear, state.hijriYear, locale, 'hijri')}`
+      : `${months[state.month - 1]} ${formatHijriYearOption(state.hijriYear, locale)}`
     : state.system === 'both'
-      ? `${months[state.month - 1]} ${getDualYearLabel(state.gregorianYear, state.hijriYear, locale)}`
+      ? `${months[state.month - 1]} ${getDualYearLabel(state.gregorianYear, state.hijriYear, locale, 'gregorian')}`
       : `${months[state.month - 1]} ${state.gregorianYear}`;
 
   const getEventDatePrefix = () => {
-    if (state.system === 'hijri') {
+    if (isHijriPrimary) {
       const g = gregorianFromHijriMonth(state.hijriYear, state.month);
       return `${g.year}-${String(g.month).padStart(2, '0')}`;
     }
@@ -90,7 +94,7 @@ export function CustomizationSidebar() {
   const nav = (dir: -1 | 1) => {
     const activeYear = getActiveYear(state);
     const next = navigateMonth(activeYear, state.month, dir);
-    if (state.system === 'hijri') {
+    if (isHijriPrimary) {
       updateState({ hijriYear: next.year, month: next.month });
     } else {
       updateState({ gregorianYear: next.year, month: next.month });
@@ -169,6 +173,27 @@ export function CustomizationSidebar() {
               </button>
             ))}
           </div>
+          {state.system === 'both' && (
+            <div className="mt-2">
+              <label className="mb-1 block text-xs text-slate-500">{t('primaryCalendar')}</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(['hijri', 'gregorian'] as PrimaryCalendar[]).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => updateState({ primaryCalendar: p })}
+                    className={`rounded-xl px-3 py-2 text-xs font-medium transition ${
+                      state.primaryCalendar === p
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                    }`}
+                  >
+                    {t(p === 'hijri' ? 'primaryCalendarHijri' : 'primaryCalendarGregorian')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </AccordionSection>
 
         <AccordionSection title={t('dateSelection')} icon={<CalendarDays className="h-4 w-4 text-emerald-500" />}>

@@ -5,6 +5,7 @@ import type {
   CalendarSystem,
   Locale,
   MonthData,
+  PrimaryCalendar,
   WeekStart,
   WeekdaySettings,
 } from '../types/calendar';
@@ -296,28 +297,38 @@ function buildHijriMonth(
 export function getMonthData(
   year: number,
   month: number,
-  system: CalendarSystem,
+  state: Pick<CalendarState, 'system' | 'primaryCalendar'>,
   weekStart: WeekStart,
   locale: Locale,
 ): MonthData {
-  if (system === 'hijri') {
+  const primary = getPrimaryCalendar(state);
+  if (primary === 'hijri') {
     return buildHijriMonth(year, month, weekStart, locale);
   }
-  return buildGregorianMonth(year, month, weekStart, locale, system);
+  return buildGregorianMonth(
+    year,
+    month,
+    weekStart,
+    locale,
+    state.system === 'both' ? 'both' : 'gregorian',
+  );
 }
 
 export function getYearMonths(
   year: number,
-  system: CalendarSystem,
+  state: Pick<CalendarState, 'system' | 'primaryCalendar'>,
   weekStart: WeekStart,
   locale: Locale,
 ): MonthData[] {
+  const primary = getPrimaryCalendar(state);
   const months: MonthData[] = [];
   for (let m = 1; m <= 12; m++) {
-    if (system === 'hijri') {
+    if (primary === 'hijri') {
       months.push(buildHijriMonth(year, m, weekStart, locale));
     } else {
-      months.push(buildGregorianMonth(year, m, weekStart, locale, system));
+      months.push(
+        buildGregorianMonth(year, m, weekStart, locale, state.system === 'both' ? 'both' : 'gregorian'),
+      );
     }
   }
   return months;
@@ -362,25 +373,62 @@ export function getWeekdayFullLabels(weekStart: WeekStart, locale: Locale): stri
   return [...names.slice(start), ...names.slice(0, start)];
 }
 
-export function getYearMonthTitle(monthData: MonthData, system: CalendarSystem, locale: Locale): string {
-  if (system === 'both') {
-    const hijriName =
-      monthData.hijriMonthName ??
-      monthData.days.find((d) => d.isCurrentMonth && d.hijriMonthName)?.hijriMonthName;
-    if (hijriName) {
-      return locale === 'ar'
-        ? `${monthData.monthName} — ${hijriName}`
-        : `${monthData.monthName} — ${hijriName}`;
-    }
+export function getGregorianMonthLabel(monthData: MonthData, locale: Locale): string | undefined {
+  const mid = monthData.days.find((d) => d.isCurrentMonth);
+  if (!mid) return undefined;
+  const month = Number(mid.date.split('-')[1]);
+  const names = locale === 'ar' ? GREGORIAN_MONTHS_AR : GREGORIAN_MONTHS_EN;
+  return names[month - 1];
+}
+
+export function getGregorianDayFromKey(dateKey: string): number {
+  return Number(dateKey.split('-')[2]);
+}
+
+export function getPrimaryCalendar(
+  state: Pick<CalendarState, 'system' | 'primaryCalendar'>,
+): PrimaryCalendar {
+  if (state.system === 'hijri') return 'hijri';
+  if (state.system === 'gregorian') return 'gregorian';
+  return state.primaryCalendar;
+}
+
+export function getYearMonthTitle(
+  monthData: MonthData,
+  system: CalendarSystem,
+  locale: Locale,
+  primary: PrimaryCalendar,
+): string {
+  if (system !== 'both') return monthData.monthName;
+
+  if (primary === 'hijri') {
+    const gregorianName = getGregorianMonthLabel(monthData, locale);
+    return gregorianName
+      ? `${monthData.monthName} — ${gregorianName}`
+      : monthData.monthName;
   }
-  return monthData.monthName;
+
+  const hijriName =
+    monthData.hijriMonthName ??
+    monthData.days.find((d) => d.isCurrentMonth && d.hijriMonthName)?.hijriMonthName;
+  return hijriName ? `${monthData.monthName} — ${hijriName}` : monthData.monthName;
 }
 
-export function getActiveYear(state: Pick<CalendarState, 'system' | 'gregorianYear' | 'hijriYear'>): number {
-  return state.system === 'hijri' ? state.hijriYear : state.gregorianYear;
+export function getActiveYear(
+  state: Pick<CalendarState, 'system' | 'primaryCalendar' | 'gregorianYear' | 'hijriYear'>,
+): number {
+  return getPrimaryCalendar(state) === 'hijri' ? state.hijriYear : state.gregorianYear;
 }
 
-export function getDualYearLabel(gYear: number, hYear: number, locale: Locale): string {
+export function getDualYearLabel(
+  gYear: number,
+  hYear: number,
+  locale: Locale,
+  primary: PrimaryCalendar = 'gregorian',
+): string {
+  if (primary === 'hijri') {
+    return locale === 'ar' ? `${hYear} هـ — ${gYear}` : `${hYear} AH — ${gYear}`;
+  }
   return locale === 'ar' ? `${gYear} — ${hYear} هـ` : `${gYear} — ${hYear} AH`;
 }
 
@@ -406,20 +454,37 @@ export function getDisplayTitle(
   system: CalendarSystem,
   locale: Locale,
   customTitle: string,
+  primary: PrimaryCalendar,
 ): string {
   if (customTitle) return customTitle;
+
   if (system === 'hijri') {
     return `${monthData.monthName} ${monthData.year}${locale === 'ar' ? ' هـ' : ' AH'}`;
   }
-  if (system === 'both' && monthData.hijriMonthName) {
+
+  if (system === 'both') {
+    if (primary === 'hijri') {
+      const gregorianName = getGregorianMonthLabel(monthData, locale);
+      const mid = monthData.days.find((d) => d.isCurrentMonth);
+      const gYear = mid ? Number(mid.date.split('-')[0]) : undefined;
+      const hijriPart = `${monthData.monthName} ${monthData.year}${locale === 'ar' ? ' هـ' : ' AH'}`;
+      const gregorianPart = gregorianName && gYear ? `${gregorianName} ${gYear}` : undefined;
+      return gregorianPart ? `${hijriPart} — ${gregorianPart}` : hijriPart;
+    }
+
     const hijriYear = monthData.days.find((d) => d.isCurrentMonth && d.hijriYear)?.hijriYear;
-    const hijriPart = hijriYear
-      ? `${monthData.hijriMonthName} ${hijriYear}${locale === 'ar' ? ' هـ' : ' AH'}`
-      : monthData.hijriMonthName;
-    return locale === 'ar'
+    const hijriName =
+      monthData.hijriMonthName ??
+      monthData.days.find((d) => d.isCurrentMonth && d.hijriMonthName)?.hijriMonthName;
+    const hijriPart =
+      hijriName && hijriYear
+        ? `${hijriName} ${hijriYear}${locale === 'ar' ? ' هـ' : ' AH'}`
+        : hijriName;
+    return hijriPart
       ? `${monthData.monthName} ${monthData.year} — ${hijriPart}`
-      : `${monthData.monthName} ${monthData.year} — ${hijriPart}`;
+      : `${monthData.monthName} ${monthData.year}`;
   }
+
   return `${monthData.monthName} ${monthData.year}`;
 }
 

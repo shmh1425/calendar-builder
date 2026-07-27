@@ -1,5 +1,6 @@
 import type { CalendarDay, CalendarState } from '../../types/calendar';
 import type { DayEvent, DayHighlight, DayNote } from '../../types/calendar';
+import { getGregorianDayFromKey, getPrimaryCalendar } from '../../utils/calendarData';
 
 type DayCellVariant = 'default' | 'year';
 
@@ -42,6 +43,14 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
     boxShadow: day.isToday && design.style === 'elegant' ? `inset 0 0 0 1.5px ${colors.today}` : undefined,
   };
 
+  const primary = getPrimaryCalendar(state);
+  const secondaryDay =
+    showDualDates && day.isCurrentMonth
+      ? primary === 'hijri'
+        ? getGregorianDayFromKey(day.date)
+        : day.hijriDay
+      : null;
+
   return (
     <div
       className={`relative flex flex-col items-center justify-center ${isYear ? 'gap-px p-px' : 'p-1'}`}
@@ -49,7 +58,7 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
     >
       <span className="leading-none tabular-nums">{day.day}</span>
 
-      {showDualDates && day.hijriDay != null && day.isCurrentMonth && (
+      {secondaryDay != null && (
         <span
           className="leading-none tabular-nums"
           style={{
@@ -59,7 +68,7 @@ export function DayCell({ day, state, showDualDates, variant = 'default' }: DayC
             opacity: 0.85,
           }}
         >
-          {day.hijriDay}
+          {secondaryDay}
         </span>
       )}
 

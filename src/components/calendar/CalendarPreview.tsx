@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { CalendarState } from '../../types/calendar';
-import { getMonthData, getYearMonths, getDisplayTitle, getDualYearLabel, getActiveYear, formatHijriYearOption } from '../../utils/calendarData';
+import { getMonthData, getYearMonths, getDisplayTitle, getDualYearLabel, getActiveYear, formatHijriYearOption, getPrimaryCalendar } from '../../utils/calendarData';
 import { MonthGrid } from './MonthGrid';
 import { YearCalendarLayout } from './YearCalendarLayout';
 import { useApp } from '../../context/AppContext';
@@ -18,23 +18,25 @@ export function CalendarPreview({ state, exportMode = false }: CalendarPreviewPr
   const activeYear = getActiveYear(state);
 
   const monthData = useMemo(
-    () => getMonthData(activeYear, state.month, state.system, content.weekStart, locale),
-    [activeYear, state.month, state.system, content.weekStart, locale],
+    () => getMonthData(activeYear, state.month, state, content.weekStart, locale),
+    [activeYear, state, content.weekStart, locale],
   );
 
   const yearMonths = useMemo(
-    () => getYearMonths(activeYear, state.system, content.weekStart, locale),
-    [activeYear, state.system, content.weekStart, locale],
+    () => getYearMonths(activeYear, state, content.weekStart, locale),
+    [activeYear, state, content.weekStart, locale],
   );
 
   const isYearly = state.view === 'yearly';
 
   const yearTitle = useMemo(() => {
     if (content.customTitle) return content.customTitle;
-    if (state.system === 'both') return getDualYearLabel(state.gregorianYear, state.hijriYear, locale);
+    if (state.system === 'both') {
+      return getDualYearLabel(state.gregorianYear, state.hijriYear, locale, getPrimaryCalendar(state));
+    }
     if (state.system === 'hijri') return formatHijriYearOption(state.hijriYear, locale);
     return `${state.gregorianYear}`;
-  }, [content.customTitle, state.gregorianYear, state.hijriYear, state.system, locale]);
+  }, [content.customTitle, state, locale]);
 
   const styleClasses = {
     minimal: 'border border-slate-200',
@@ -93,7 +95,7 @@ export function CalendarPreview({ state, exportMode = false }: CalendarPreviewPr
       )}
 
       {!isYearly && !content.customTitle && (
-        <span className="sr-only">{getDisplayTitle(monthData, state.system, locale, '')}</span>
+        <span className="sr-only">{getDisplayTitle(monthData, state.system, locale, '', getPrimaryCalendar(state))}</span>
       )}
     </div>
   );

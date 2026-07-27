@@ -5,6 +5,7 @@ import {
   getWeekdayFullLabels,
   getDisplayTitle,
   getYearMonthTitle,
+  getPrimaryCalendar,
 } from '../../utils/calendarData';
 import { DayCell } from './DayCell';
 import { useApp } from '../../context/AppContext';
@@ -26,12 +27,13 @@ export function MonthGrid({ monthData, state, variant = 'default' }: MonthGridPr
   const fullWeekdays = getWeekdayFullLabels(state.content.weekStart, locale);
   const displayWeekdays = resolveWeekdayNames(wd, state.content.weekStart, locale, isYear);
 
+  const primary = getPrimaryCalendar(state);
   const showDualDates = state.system === 'both';
   const showWeekNumbers = !isYear && state.content.showWeekNumbers;
 
   const title = isYear
-    ? getYearMonthTitle(monthData, state.system, locale)
-    : getDisplayTitle(monthData, state.system, locale, state.content.customTitle);
+    ? getYearMonthTitle(monthData, state.system, locale, primary)
+    : getDisplayTitle(monthData, state.system, locale, state.content.customTitle, primary);
 
   const cellGap = isYear ? Math.min(design.cellGap, 2) : design.cellGap;
 

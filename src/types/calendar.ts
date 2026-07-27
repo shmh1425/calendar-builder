@@ -1,5 +1,6 @@
 export type CalendarView = 'monthly' | 'yearly';
 export type CalendarSystem = 'gregorian' | 'hijri' | 'both';
+export type PrimaryCalendar = 'gregorian' | 'hijri';
 export type WeekStart = 'saturday' | 'sunday' | 'monday';
 export type DesignStyle = 'minimal' | 'modern' | 'elegant';
 export type Orientation = 'portrait' | 'landscape';
@@ -81,6 +82,8 @@ export interface ContentSettings {
 export interface CalendarState {
   view: CalendarView;
   system: CalendarSystem;
+  /** Which calendar drives the grid when system is "both" */
+  primaryCalendar: PrimaryCalendar;
   gregorianYear: number;
   hijriYear: number;
   month: number;
