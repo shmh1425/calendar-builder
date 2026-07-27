@@ -81,7 +81,8 @@ export interface ContentSettings {
 export interface CalendarState {
   view: CalendarView;
   system: CalendarSystem;
-  year: number;
+  gregorianYear: number;
+  hijriYear: number;
   month: number;
   colors: ColorTheme;
   fonts: FontSettings;

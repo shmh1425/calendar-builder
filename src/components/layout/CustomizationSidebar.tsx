@@ -19,13 +19,10 @@ import { FONT_OPTIONS, WEEK_START_OPTIONS, DESIGN_STYLE_OPTIONS } from '../../co
 import { WeekdaySection } from '../sidebar/WeekdaySection';
 import {
   navigateMonth,
-  getCurrentHijriYear,
-  getCurrentHijriMonth,
   getYearRange,
-  formatYearOption,
   formatHijriYearOption,
-  hijriYearForGregorianYear,
-  gregorianYearForHijriYear,
+  getActiveYear,
+  getDualYearLabel,
   gregorianFromHijriMonth,
 } from '../../utils/calendarData';
 import { GREGORIAN_MONTHS_AR, MONTHS_SHORT_EN, HIJRI_MONTHS_AR } from '../../constants/monthNames';
@@ -41,30 +38,22 @@ export function CustomizationSidebar() {
     : locale === 'ar' ? GREGORIAN_MONTHS_AR : MONTHS_SHORT_EN;
 
   const isHijri = state.system === 'hijri';
-  const isBoth = state.system === 'both';
 
   const gregorianYears = getYearRange('gregorian');
   const hijriYears = getYearRange('hijri');
-  const currentHijriYear = isHijri
-    ? state.year
-    : hijriYearForGregorianYear(state.year);
 
   const navLabel = isHijri
-    ? `${months[state.month - 1]} ${formatHijriYearOption(state.year, locale)}`
-    : isBoth
-      ? `${months[state.month - 1]} ${state.year} — ${formatHijriYearOption(currentHijriYear, locale)}`
-      : `${months[state.month - 1]} ${state.year}`;
+    ? `${months[state.month - 1]} ${formatHijriYearOption(state.hijriYear, locale)}`
+    : state.system === 'both'
+      ? `${months[state.month - 1]} ${getDualYearLabel(state.gregorianYear, state.hijriYear, locale)}`
+      : `${months[state.month - 1]} ${state.gregorianYear}`;
 
-  const handleGregorianYearChange = (gYear: number) => {
-    updateState({ year: gYear });
-  };
-
-  const handleHijriYearChange = (hYear: number) => {
-    if (isHijri) {
-      updateState({ year: hYear });
-    } else {
-      updateState({ year: gregorianYearForHijriYear(hYear) });
+  const getEventDatePrefix = () => {
+    if (state.system === 'hijri') {
+      const g = gregorianFromHijriMonth(state.hijriYear, state.month);
+      return `${g.year}-${String(g.month).padStart(2, '0')}`;
     }
+    return `${state.gregorianYear}-${String(state.month).padStart(2, '0')}`;
   };
 
   const updateColors = (key: keyof typeof state.colors, value: string) => {
@@ -95,30 +84,21 @@ export function CustomizationSidebar() {
   };
 
   const handleSystemChange = (system: CalendarSystem) => {
-    const updates: Partial<typeof state> = { system };
-    if (system === 'hijri') {
-      updates.year = getCurrentHijriYear();
-      updates.month = getCurrentHijriMonth();
-    } else if (system === 'both') {
-      if (state.system === 'hijri') {
-        const g = gregorianFromHijriMonth(state.year, state.month);
-        updates.year = g.year;
-        updates.month = g.month;
-      }
-    } else {
-      updates.year = new Date().getFullYear();
-      updates.month = new Date().getMonth() + 1;
-    }
-    updateState(updates);
+    updateState({ system });
   };
 
   const nav = (dir: -1 | 1) => {
-    const next = navigateMonth(state.year, state.month, dir);
-    updateState(next);
+    const activeYear = getActiveYear(state);
+    const next = navigateMonth(activeYear, state.month, dir);
+    if (state.system === 'hijri') {
+      updateState({ hijriYear: next.year, month: next.month });
+    } else {
+      updateState({ gregorianYear: next.year, month: next.month });
+    }
   };
 
   const addEvent = () => {
-    const date = `${state.year}-${String(state.month).padStart(2, '0')}-01`;
+    const date = `${getEventDatePrefix()}-01`;
     updateState({
       events: [
         ...state.events,
@@ -128,14 +108,14 @@ export function CustomizationSidebar() {
   };
 
   const addNote = () => {
-    const date = `${state.year}-${String(state.month).padStart(2, '0')}-01`;
+    const date = `${getEventDatePrefix()}-01`;
     updateState({
       notes: [...state.notes, { date, text: '' }],
     });
   };
 
   const addHighlight = () => {
-    const date = `${state.year}-${String(state.month).padStart(2, '0')}-01`;
+    const date = `${getEventDatePrefix()}-01`;
     updateState({
       highlights: [...state.highlights, { date, color: '#fef08a' }],
     });
@@ -203,81 +183,44 @@ export function CustomizationSidebar() {
               <ChevronLeft className="h-4 w-4" />
             </button>
           </div>
-          {isBoth ? (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">{t('gregorianYear')}</label>
-                <select
-                  value={state.year}
-                  onChange={(e) => handleGregorianYearChange(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  {gregorianYears.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">{t('hijriYear')}</label>
-                <select
-                  value={currentHijriYear}
-                  onChange={(e) => handleHijriYearChange(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  {hijriYears.map((y) => (
-                    <option key={y} value={y}>{formatHijriYearOption(y, locale)}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <label className="mb-1 block text-xs text-slate-500">{t('month')}</label>
-                <select
-                  value={state.month}
-                  onChange={(e) => updateState({ month: Number(e.target.value) })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  {months.map((m, i) => (
-                    <option key={m} value={i + 1}>{m}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-xs text-slate-500">{t('gregorianYear')}</label>
+              <select
+                value={state.gregorianYear}
+                onChange={(e) => updateState({ gregorianYear: Number(e.target.value) })}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                {gregorianYears.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">
-                  {isHijri ? t('hijriYear') : t('year')}
-                </label>
-                <select
-                  value={isHijri ? state.year : state.year}
-                  onChange={(e) =>
-                    isHijri
-                      ? handleHijriYearChange(Number(e.target.value))
-                      : handleGregorianYearChange(Number(e.target.value))
-                  }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  {(isHijri ? hijriYears : gregorianYears).map((y) => (
-                    <option key={y} value={y}>
-                      {isHijri ? formatHijriYearOption(y, locale) : formatYearOption(y, state.system, locale)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">{t('month')}</label>
-                <select
-                  value={state.month}
-                  onChange={(e) => updateState({ month: Number(e.target.value) })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  {months.map((m, i) => (
-                    <option key={m} value={i + 1}>{m}</option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="mb-1 block text-xs text-slate-500">{t('hijriYear')}</label>
+              <select
+                value={state.hijriYear}
+                onChange={(e) => updateState({ hijriYear: Number(e.target.value) })}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                {hijriYears.map((y) => (
+                  <option key={y} value={y}>{formatHijriYearOption(y, locale)}</option>
+                ))}
+              </select>
             </div>
-          )}
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs text-slate-500">{t('month')}</label>
+              <select
+                value={state.month}
+                onChange={(e) => updateState({ month: Number(e.target.value) })}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                {months.map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </AccordionSection>
 
         <AccordionSection title={t('colors')} icon={<Palette className="h-4 w-4 text-pink-500" />}>

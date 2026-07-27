@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { CalendarState } from '../../types/calendar';
-import { getMonthData, getYearMonths, getDisplayTitle, getDualYearLabel } from '../../utils/calendarData';
+import { getMonthData, getYearMonths, getDisplayTitle, getDualYearLabel, getActiveYear, formatHijriYearOption } from '../../utils/calendarData';
 import { MonthGrid } from './MonthGrid';
 import { YearCalendarLayout } from './YearCalendarLayout';
 import { useApp } from '../../context/AppContext';
@@ -15,26 +15,26 @@ export function CalendarPreview({ state, exportMode = false }: CalendarPreviewPr
   const { locale } = useApp();
   const { colors, fonts, design, content } = state;
 
+  const activeYear = getActiveYear(state);
+
   const monthData = useMemo(
-    () => getMonthData(state.year, state.month, state.system, content.weekStart, locale),
-    [state.year, state.month, state.system, content.weekStart, locale],
+    () => getMonthData(activeYear, state.month, state.system, content.weekStart, locale),
+    [activeYear, state.month, state.system, content.weekStart, locale],
   );
 
   const yearMonths = useMemo(
-    () => getYearMonths(state.year, state.system, content.weekStart, locale),
-    [state.year, state.system, content.weekStart, locale],
+    () => getYearMonths(activeYear, state.system, content.weekStart, locale),
+    [activeYear, state.system, content.weekStart, locale],
   );
 
   const isYearly = state.view === 'yearly';
 
   const yearTitle = useMemo(() => {
     if (content.customTitle) return content.customTitle;
-    if (state.system === 'both') return getDualYearLabel(state.year, locale);
-    if (state.system === 'hijri') {
-      return `${state.year}${locale === 'ar' ? ' هـ' : ' AH'}`;
-    }
-    return `${state.year}`;
-  }, [content.customTitle, state.year, state.system, locale]);
+    if (state.system === 'both') return getDualYearLabel(state.gregorianYear, state.hijriYear, locale);
+    if (state.system === 'hijri') return formatHijriYearOption(state.hijriYear, locale);
+    return `${state.gregorianYear}`;
+  }, [content.customTitle, state.gregorianYear, state.hijriYear, state.system, locale]);
 
   const styleClasses = {
     minimal: 'border border-slate-200',

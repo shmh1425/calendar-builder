@@ -1,4 +1,4 @@
-import { getDualYearLabel } from '../../utils/calendarData';
+import { getDualYearLabel, formatHijriYearOption } from '../../utils/calendarData';
 import type { CalendarState, MonthData } from '../../types/calendar';
 import { MonthGrid } from './MonthGrid';
 import { useApp } from '../../context/AppContext';
@@ -30,8 +30,10 @@ export function YearCalendarLayout({ yearTitle, yearMonths, state, exportMode }:
           style={{ color: colors.weekdayNames, fontFamily: fonts.family }}
         >
           {state.system === 'both'
-            ? getDualYearLabel(state.year, locale)
-            : `${t('yearly')} — ${state.year}${state.system === 'hijri' ? (locale === 'ar' ? ' هـ' : ' AH') : ''}`}
+            ? getDualYearLabel(state.gregorianYear, state.hijriYear, locale)
+            : state.system === 'hijri'
+              ? `${t('yearly')} — ${formatHijriYearOption(state.hijriYear, locale)}`
+              : `${t('yearly')} — ${state.gregorianYear}`}
         </p>
       </header>
 

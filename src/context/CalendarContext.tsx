@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react';
 import type { CalendarState } from '../types/calendar';
 import { DEFAULT_STATE } from '../constants/defaults';
+import { getCurrentHijriYear } from '../utils/calendarData';
 import {
   saveCurrentDesign,
   loadCurrentDesign,
@@ -22,7 +23,8 @@ function reducer(state: CalendarState, action: Action): CalendarState {
     case 'RESET': {
       const reset = {
         ...DEFAULT_STATE,
-        year: new Date().getFullYear(),
+        gregorianYear: new Date().getFullYear(),
+        hijriYear: getCurrentHijriYear(),
         month: new Date().getMonth() + 1,
       };
       return applyWeekdayDefault(reset);
@@ -52,7 +54,8 @@ function getInitialState(): CalendarState {
   if (saved) return saved;
   return applyWeekdayDefault({
     ...DEFAULT_STATE,
-    year: new Date().getFullYear(),
+    gregorianYear: new Date().getFullYear(),
+    hijriYear: getCurrentHijriYear(),
     month: new Date().getMonth() + 1,
   });
 }

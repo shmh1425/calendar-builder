@@ -1,5 +1,6 @@
 import type { CalendarState, ColorTheme, WeekdaySettings } from '../types/calendar';
 import { getPresetNames } from './weekdayPresets';
+import { getCurrentHijriYear } from '../utils/calendarData';
 
 export const DEFAULT_COLORS: ColorTheme = {
   pageBackground: '#f8fafc',
@@ -28,7 +29,8 @@ export const DEFAULT_WEEKDAYS: WeekdaySettings = {
 export const DEFAULT_STATE: CalendarState = {
   view: 'monthly',
   system: 'gregorian',
-  year: new Date().getFullYear(),
+  gregorianYear: new Date().getFullYear(),
+  hijriYear: getCurrentHijriYear(),
   month: new Date().getMonth() + 1,
   colors: { ...DEFAULT_COLORS },
   fonts: {

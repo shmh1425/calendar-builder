@@ -1,6 +1,7 @@
 import { toGregorian, toHijri } from 'hijri-converter';
 import type {
   CalendarDay,
+  CalendarState,
   CalendarSystem,
   Locale,
   MonthData,
@@ -375,9 +376,12 @@ export function getYearMonthTitle(monthData: MonthData, system: CalendarSystem, 
   return monthData.monthName;
 }
 
-export function getDualYearLabel(year: number, locale: Locale): string {
-  const hijriYear = toHijri(year, 7, 1).hy;
-  return locale === 'ar' ? `${year} — ${hijriYear} هـ` : `${year} — ${hijriYear} AH`;
+export function getActiveYear(state: Pick<CalendarState, 'system' | 'gregorianYear' | 'hijriYear'>): number {
+  return state.system === 'hijri' ? state.hijriYear : state.gregorianYear;
+}
+
+export function getDualYearLabel(gYear: number, hYear: number, locale: Locale): string {
+  return locale === 'ar' ? `${gYear} — ${hYear} هـ` : `${gYear} — ${hYear} AH`;
 }
 
 export function navigateMonth(

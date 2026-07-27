@@ -1,11 +1,25 @@
 import type { CalendarState, SavedDesign, WeekdaySettings } from '../types/calendar';
 import { DEFAULT_STATE, STORAGE_KEYS } from '../constants/defaults';
+import { hijriYearForGregorianYear } from './calendarData';
 
 export function normalizeCalendarState(partial: Partial<CalendarState>): CalendarState {
-  const parsed = partial as Partial<CalendarState> & Record<string, unknown>;
+  const parsed = partial as Partial<CalendarState> & { year?: number };
+  const legacyYear = parsed.year;
+  const gregorianYear =
+    parsed.gregorianYear ??
+    (parsed.system === 'hijri' && legacyYear
+      ? undefined
+      : legacyYear ?? DEFAULT_STATE.gregorianYear);
+  const resolvedGregorian = gregorianYear ?? DEFAULT_STATE.gregorianYear;
+  const hijriYear =
+    parsed.hijriYear ??
+    (parsed.system === 'hijri' && legacyYear ? legacyYear : hijriYearForGregorianYear(resolvedGregorian));
+
   return {
     ...DEFAULT_STATE,
     ...parsed,
+    gregorianYear: resolvedGregorian,
+    hijriYear,
     colors: { ...DEFAULT_STATE.colors, ...parsed.colors },
     fonts: { ...DEFAULT_STATE.fonts, ...parsed.fonts },
     design: { ...DEFAULT_STATE.design, ...parsed.design },

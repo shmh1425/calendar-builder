@@ -19,8 +19,8 @@ export function ActionBar() {
   const getPreviewElement = () => document.getElementById('calendar-print-area');
 
   const fileBase = state.view === 'yearly'
-    ? `calendar-year-${state.year}`
-    : `calendar-${state.year}-${state.month}`;
+    ? `calendar-${state.gregorianYear}-${state.hijriYear}`
+    : `calendar-${state.gregorianYear}-${state.month}`;
 
   const handleReset = () => {
     openConfirm(t('confirmReset'), t('confirmResetMessage'), resetState);
